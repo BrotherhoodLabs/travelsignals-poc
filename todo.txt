@@ -1,0 +1,107 @@
+
+TODO: travelsignals-poc — PoC Quarkus + Vue.js (Event-Driven Alerts for Travel)
+Organisation: https://github.com/BrotherhoodLabs/
+Repo cible: BrotherhoodLabs/travelsignals-poc (SSH)
+
+1. Créer le repository GitHub via SSH
+   - Nom du repo: travelsignals-poc (public ou privé)
+   - Vérifier/ajouter la clé SSH à GitHub
+   - Initialiser la structure racine: backend/, frontend/, infra/, docs/, .gitignore, LICENSE, README.md
+   - Configurer protection de branche (main) et PR template
+
+2. Définir la vision du PoC (docs/vision.md)
+   - But: écouter des événements (prix, météo, vols, rappels visa) et générer des alertes consolidées
+   - Usage autonome (dashboard web) et intégrable à MusafirGO (webhook REST + événements Kafka)
+   - Portée PoC: flux simulés, règles simples, persistance en mémoire, démo end-to-end
+
+3. Standardiser le workflow commits & push
+   - Après CHAQUE ticket: commit + push
+   - Format Google/Conventional: <type>(scope): message
+   - Ex: feat(backend): add alert aggregation endpoint
+
+4. Backend — Initialisation Quarkus
+   - Créer projet Quarkus (Java 21) dans backend/
+   - Extensions: resteasy-reactive, smallrye-reactive-messaging-kafka, smallrye-health, smallrye-openapi, jackson, junit5
+   - Configurer application.properties minimale (ports, openapi, health)
+
+5. Backend — Modèle d’événements (docs/event-schemas.md)
+   - price.update: {destination, provider, oldPrice, newPrice, currency, ts}
+   - weather.alert: {destination, level, message, ts}
+   - flight.status: {flightNo, status, departure, arrival, ts}
+   - visa.reminder: {country, daysBefore, message, ts}
+   - alert.aggregate (sortie): {type, destination, priority, title, details, ts}
+
+6. Backend — Simulateurs d’événements
+   - Producer(s) internes (scheduler) pour price.update, weather.alert, flight.status, visa.reminder
+   - Fréquence configurable (env vars)
+
+7. Backend — Agrégateur & règles
+   - Consommer les 4 topics d’entrée
+   - Règles simples: priorité = P1 météo rouge, P2 baisse prix > 10%, P3 autres
+   - Produire alert.aggregate vers topic de sortie
+   - Exposer REST GET /api/alerts (dernières N agrégations en mémoire) + GET /q/health + /q/openapi
+
+8. Backend — Tests
+   - Tests unitaires règles d’agrégation (3 cas)
+   - Test d’intégration REST (GET /api/alerts)
+
+9. Frontend — Initialisation Vue.js
+   - Créer projet Vue 3 + Vite dans frontend/
+   - Installer axios, pinia (ou vuex), vue-router
+   - Mettre en place layout simple (Header, Sidebar, Content)
+
+10. Frontend — Écrans
+   - Dashboard: tableau des alertes agrégées (type, destination, priorité, titre, ts)
+   - Filtres: par type et priorité
+   - Détails alerte: modal/panneau latéral (title, details JSON formaté)
+   - Page “Flux”: compteurs temps réel simulés (polling REST)
+
+11. Frontend — Intégration API
+   - Service axios: baseURL configurable (.env)
+   - Appels: GET /api/alerts
+   - Gestion erreurs (toast) et loader UI
+
+12. Infra — Kafka & Docker Compose
+   - infra/docker-compose.yml: zookeeper, kafka, backend, frontend
+   - Variables: KAFKA_BOOTSTRAP_SERVERS pour Quarkus
+   - Cibles make: make up/down/logs
+
+13. Observabilité minimale
+   - Health Quarkus: /q/health
+   - OpenAPI: /q/openapi et docs/swagger-ui
+   - Logger JSON optionnel (config)
+
+14. Webhook d’intégration MusafirGO (option PoC)
+   - Exposer POST /api/webhook/alerts (rejoue alert.aggregate vers HTTP)
+   - docs/integration.md: format, exemple cURL
+
+15. Sécurité (option PoC)
+   - Clé API simple via header X-API-Key pour POST webhook
+   - Note: pour PoC seulement (pas d’OIDC)
+
+16. Scripts DX
+   - scripts/dev.sh: démarrage backend + frontend + kafka
+   - scripts/seed.sh: envoi d’événements de test (via kafka-console-producer)
+   - scripts/demo.sh: scénario de démo (baisse prix + météo rouge)
+
+17. Documentation
+   - README.md: description, architecture (schéma simple), prérequis, démarrage rapide, endpoints, captures UI
+   - docs/architecture.md: diagramme séquence event→aggregate→dashboard
+   - docs/event-scenarios.md: 3 scénarios démo pas-à-pas
+
+18. Qualité & CI
+   - Linters: Spotless/Checkstyle (backend), ESLint/Prettier (frontend)
+   - GitHub Actions: build backend (mvn verify), build frontend (npm ci && npm run build)
+   - Artefacts: rapport tests backend, bundle frontend
+
+19. Livraison conteneurs
+   - Dockerfile backend (quarkus JVM, mode dev accepté), Dockerfile frontend (nginx)
+   - docker-compose: ports 8080 (backend), 8081 (frontend), 9092 (kafka), 2181 (zk)
+
+20. Validation PoC End-to-End
+   - Lancer compose, vérifier /q/health
+   - Générer événements (seed.sh), voir agrégation sur dashboard
+   - Capturer écran et ajouter à docs/screenshots/
+
+21. Rétro & next steps (docs/retro.md)
+   - Limites PoC, pistes: persistence (Postgres/Outbox), OIDC, WebSockets/SSE, déploiement k8s
