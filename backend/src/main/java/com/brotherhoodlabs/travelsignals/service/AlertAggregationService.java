@@ -32,38 +32,48 @@ public class AlertAggregationService {
     @Incoming("price-updates-in")
     @Transactional
     public void processPriceUpdate(io.vertx.core.json.JsonObject jsonObject) {
-        PriceUpdate priceUpdate = jsonObject.mapTo(PriceUpdate.class);
-        LOG.info("Processing price update for " + priceUpdate.destination);
-        
-        // Sauvegarder l'événement en base
-        savePriceEvent(priceUpdate);
-        
-        // Règle P2: Baisse de prix > 10%
-        if (priceUpdate.getPriceChangePercentage() < -10) {
-            Map<String, Object> details = new HashMap<>();
-            details.put("provider", priceUpdate.provider);
-            details.put("oldPrice", priceUpdate.oldPrice);
-            details.put("newPrice", priceUpdate.newPrice);
-            details.put("currency", priceUpdate.currency);
-            details.put("changePercentage", priceUpdate.getPriceChangePercentage());
+        try {
+            PriceUpdate priceUpdate = jsonObject.mapTo(PriceUpdate.class);
+            LOG.info("Processing price update for " + priceUpdate.destination);
             
-            AlertAggregate alert = new AlertAggregate(
-                "PRICE",
-                priceUpdate.destination,
-                "P2",
-                "Baisse de prix significative à " + priceUpdate.destination,
-                details
-            );
+            // Validation des données
+            if (priceUpdate.destination == null || priceUpdate.destination.trim().isEmpty()) {
+                LOG.warn("Price update rejected: missing destination");
+                return;
+            }
             
-            // Sauvegarder l'alerte en base
-            saveAlertAggregate(alert);
+            // Sauvegarder l'événement en base
+            savePriceEvent(priceUpdate);
             
-            alerts.add(alert);
-            alertEmitter.send(alert);
-            LOG.info("Generated P2 alert for price drop: " + priceUpdate.destination);
+            // Règle P2: Baisse de prix > 10%
+            if (priceUpdate.getPriceChangePercentage() < -10) {
+                Map<String, Object> details = new HashMap<>();
+                details.put("provider", priceUpdate.provider);
+                details.put("oldPrice", priceUpdate.oldPrice);
+                details.put("newPrice", priceUpdate.newPrice);
+                details.put("currency", priceUpdate.currency);
+                details.put("changePercentage", priceUpdate.getPriceChangePercentage());
+                
+                AlertAggregate alert = new AlertAggregate(
+                    "PRICE",
+                    priceUpdate.destination,
+                    "P2",
+                    "Baisse de prix significative à " + priceUpdate.destination,
+                    details
+                );
+                
+                // Sauvegarder l'alerte en base
+                saveAlertAggregate(alert);
+                
+                alertEmitter.send(alert);
+                LOG.info("Generated P2 alert for price drop: " + priceUpdate.destination);
+            }
+            
+            updateCounter("price-updates");
+        } catch (Exception e) {
+            LOG.error("Error processing price update: " + e.getMessage(), e);
+            updateCounter("price-updates-errors");
         }
-        
-        updateCounter("price-updates");
     }
     
     @Incoming("weather-alerts-in")
@@ -85,7 +95,6 @@ public class AlertAggregationService {
                 details
             );
             
-            alerts.add(alert);
             alertEmitter.send(alert);
             LOG.info("Generated P1 alert for red weather: " + weatherAlert.destination);
         }
@@ -114,7 +123,6 @@ public class AlertAggregationService {
                 details
             );
             
-            alerts.add(alert);
             alertEmitter.send(alert);
             LOG.info("Generated P3 alert for flight status: " + flightStatus.flightNo);
         }
@@ -141,15 +149,17 @@ public class AlertAggregationService {
             details
         );
         
-        alerts.add(alert);
-        alertEmitter.send(alert);
-        LOG.info("Generated P3 alert for visa reminder: " + visaReminder.country);
+            alertEmitter.send(alert);
+            LOG.info("Generated P3 alert for visa reminder: " + visaReminder.country);
         
         updateCounter("visa-reminders");
     }
     
     public List<AlertAggregate> getAlerts() {
-        return List.copyOf(alerts);
+        // Récupérer les alertes depuis la base de données
+        return AlertAggregateEntity.findRecent(100).stream()
+            .map(this::convertToModel)
+            .toList();
     }
     
     public Map<String, Object> getEventCounters() {
@@ -157,13 +167,13 @@ public class AlertAggregationService {
     }
     
     private void updateCounter(String eventType) {
-        eventCounters.merge(eventType, 1, (old, newVal) -> (Integer) old + 1);
+        eventCounters.merge(eventType, 1, (old, newVal) -> old + 1);
     }
     
     private void savePriceEvent(PriceUpdate priceUpdate) {
         try {
             // Trouver ou créer la destination
-            Destination destination = (Destination) Destination.find("name", priceUpdate.destination)
+            Destination destination = (Destination) io.quarkus.hibernate.orm.panache.PanacheEntityBase.find("name", priceUpdate.destination)
                     .firstResultOptional()
                     .orElseGet(() -> {
                         Destination newDest = new Destination();
@@ -174,12 +184,12 @@ public class AlertAggregationService {
                     });
             
             // Trouver ou créer le provider
-            Provider provider = (Provider) Provider.find("name", priceUpdate.provider)
+            Provider provider = (Provider) io.quarkus.hibernate.orm.panache.PanacheEntityBase.find("name", priceUpdate.provider)
                     .firstResultOptional()
                     .orElseGet(() -> {
                         Provider newProv = new Provider();
                         newProv.name = priceUpdate.provider;
-                        newProv.type = "AIRLINE";
+                        newProv.type = com.brotherhoodlabs.travelsignals.entity.enums.ProviderType.AIRLINE;
                         newProv.persist();
                         return newProv;
                     });
@@ -201,15 +211,45 @@ public class AlertAggregationService {
     private void saveAlertAggregate(AlertAggregate alert) {
         try {
             AlertAggregateEntity entity = new AlertAggregateEntity();
-            entity.type = alert.type;
+            entity.type = com.brotherhoodlabs.travelsignals.entity.enums.AlertType.valueOf(alert.type);
             entity.destination = alert.destination;
-            entity.priority = alert.priority;
+            entity.priority = com.brotherhoodlabs.travelsignals.entity.enums.Priority.valueOf(alert.priority);
             entity.title = alert.title;
             entity.details = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(alert.details);
             entity.eventTimestamp = alert.ts.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
             entity.persist();
         } catch (Exception e) {
             LOG.error("Error saving alert aggregate: " + e.getMessage(), e);
+        }
+    }
+    
+    private AlertAggregate convertToModel(AlertAggregateEntity entity) {
+        try {
+            Map<String, Object> details = new HashMap<>();
+            if (entity.details != null && !entity.details.trim().isEmpty()) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> parsedDetails = new com.fasterxml.jackson.databind.ObjectMapper().readValue(entity.details, Map.class);
+                details = parsedDetails;
+            }
+            
+            return new AlertAggregate(
+                entity.type.name(),
+                entity.destination,
+                entity.priority.name(),
+                entity.title,
+                details,
+                entity.eventTimestamp.atZone(java.time.ZoneId.systemDefault()).toInstant()
+            );
+        } catch (Exception e) {
+            LOG.error("Error converting entity to model: " + e.getMessage(), e);
+            return new AlertAggregate(
+                entity.type.name(),
+                entity.destination,
+                entity.priority.name(),
+                entity.title,
+                new HashMap<>(),
+                entity.eventTimestamp.atZone(java.time.ZoneId.systemDefault()).toInstant()
+            );
         }
     }
 }

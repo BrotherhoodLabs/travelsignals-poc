@@ -1,5 +1,6 @@
 package com.brotherhoodlabs.travelsignals.entity;
 
+import com.brotherhoodlabs.travelsignals.entity.enums.ProviderType;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -10,11 +11,12 @@ import java.util.List;
 @Table(name = "providers")
 public class Provider extends PanacheEntity {
     
-    @Column(name = "name", unique = true, nullable = false)
+    @Column(name = "name", unique = true, nullable = false, length = 100)
     public String name;
     
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    public String type; // AIRLINE, HOTEL, ACTIVITY
+    public ProviderType type;
     
     @Column(name = "website")
     public String website;
@@ -36,7 +38,7 @@ public class Provider extends PanacheEntity {
         return find("name", name).list();
     }
     
-    public static List<Provider> findByType(String type) {
+    public static List<Provider> findByType(ProviderType type) {
         return find("type", type).list();
     }
 }

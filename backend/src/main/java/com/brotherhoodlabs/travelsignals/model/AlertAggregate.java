@@ -33,4 +33,13 @@ public class AlertAggregate {
         this.details = details;
         this.ts = Instant.now();
     }
+    
+    public AlertAggregate(String type, String destination, String priority, String title, Map<String, Object> details, Instant ts) {
+        this.type = type;
+        this.destination = destination;
+        this.priority = priority;
+        this.title = title;
+        this.details = details;
+        this.ts = ts;
+    }
 }

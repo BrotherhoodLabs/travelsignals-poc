@@ -1,5 +1,7 @@
 package com.brotherhoodlabs.travelsignals.entity;
 
+import com.brotherhoodlabs.travelsignals.entity.enums.AlertType;
+import com.brotherhoodlabs.travelsignals.entity.enums.Priority;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -10,14 +12,16 @@ import java.util.List;
 @Table(name = "alert_aggregates")
 public class AlertAggregateEntity extends PanacheEntity {
     
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
-    public String type; // PRICE, WEATHER, FLIGHT, VISA
+    public AlertType type;
     
     @Column(name = "destination", nullable = false, length = 100)
     public String destination;
     
+    @Enumerated(EnumType.STRING)
     @Column(name = "priority", nullable = false, length = 5)
-    public String priority; // P1, P2, P3
+    public Priority priority;
     
     @Column(name = "title", nullable = false, length = 255)
     public String title;
@@ -39,22 +43,22 @@ public class AlertAggregateEntity extends PanacheEntity {
     }
     
     public boolean isHighPriority() {
-        return "P1".equals(priority);
+        return Priority.P1.equals(priority);
     }
     
     public boolean isMediumPriority() {
-        return "P2".equals(priority);
+        return Priority.P2.equals(priority);
     }
     
     public boolean isLowPriority() {
-        return "P3".equals(priority);
+        return Priority.P3.equals(priority);
     }
     
-    public static List<AlertAggregateEntity> findByType(String type) {
+    public static List<AlertAggregateEntity> findByType(AlertType type) {
         return find("type", type).list();
     }
     
-    public static List<AlertAggregateEntity> findByPriority(String priority) {
+    public static List<AlertAggregateEntity> findByPriority(Priority priority) {
         return find("priority", priority).list();
     }
     
@@ -63,7 +67,7 @@ public class AlertAggregateEntity extends PanacheEntity {
     }
     
     public static List<AlertAggregateEntity> findHighPriority() {
-        return find("priority", "P1").list();
+        return find("priority", Priority.P1).list();
     }
     
     public static List<AlertAggregateEntity> findRecent(int limit) {
