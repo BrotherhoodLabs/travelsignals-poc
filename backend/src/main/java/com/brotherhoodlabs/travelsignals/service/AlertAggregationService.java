@@ -26,9 +26,8 @@ public class AlertAggregationService {
     @Channel("alert-aggregates")
     Emitter<AlertAggregate> alertEmitter;
     
-    // Stockage en mémoire des alertes
-    private final List<AlertAggregate> alerts = new CopyOnWriteArrayList<>();
-    private final Map<String, Object> eventCounters = new ConcurrentHashMap<>();
+    // Compteurs d'événements (stockage en mémoire pour les métriques)
+    private final Map<String, Integer> eventCounters = new ConcurrentHashMap<>();
     
     @Incoming("price-updates-in")
     @Transactional
