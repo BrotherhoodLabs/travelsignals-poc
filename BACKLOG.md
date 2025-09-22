@@ -33,14 +33,16 @@
   - [x] Health checks
   - [x] Documentation OpenAPI
 
-- [ ] **Opérations CRUD Complètes**
-  - [ ] CRUD Destinations
-  - [ ] CRUD Providers
-  - [ ] CRUD Price Events
-  - [ ] CRUD Weather Events
-  - [ ] CRUD Flight Events
-  - [ ] CRUD Visa Events
-  - [ ] CRUD Alert Aggregates
+- [x] **Opérations CRUD Complètes**
+  - [x] CRUD Destinations
+  - [x] CRUD Providers
+  - [x] CRUD Price Events
+  - [x] CRUD Weather Events
+  - [x] CRUD Flight Events
+  - [x] CRUD Visa Events
+  - [x] CRUD Alert Aggregates
+  - [x] Endpoints de génération d'alertes
+  - [x] Endpoints de données de test
 
 ### 3. Frontend Vue.js
 - [x] **Interface Utilisateur**
@@ -53,6 +55,8 @@
   - [x] Service API avec Axios
   - [x] Gestion d'état avec Pinia
   - [x] Gestion des erreurs
+  - [x] Configuration CORS
+  - [x] Connexion backend-frontend fonctionnelle
 
 - [ ] **Interface CRUD**
   - [ ] Formulaires de création/édition
@@ -115,16 +119,20 @@
 - [x] **API fonctionnelle** : Endpoints répondent aux requêtes
 - [x] **Base de données** : Connexion et données de test chargées
 - [x] **Frontend** : Interface accessible et responsive
-- [ ] **CRUD complet** : Toutes les opérations CRUD fonctionnelles
+- [x] **CRUD complet** : Toutes les opérations CRUD fonctionnelles
+- [x] **Intégration** : Backend-frontend connectés avec CORS
+- [x] **Stockage persistant** : Alertes sauvegardées en base
 - [ ] **Tests** : Couverture de tests > 80%
 - [ ] **Performance** : Temps de réponse < 200ms
 
 ## 🔄 Prochaines Itérations
 
-### Itération 1 : Finalisation CRUD Backend
-- Implémentation des repositories Panache
-- Création des endpoints CRUD
-- Tests des opérations CRUD
+### Itération 1 : ✅ Finalisation CRUD Backend (TERMINÉE)
+- ✅ Implémentation des repositories Panache
+- ✅ Création des endpoints CRUD
+- ✅ Tests des opérations CRUD
+- ✅ Configuration CORS
+- ✅ Endpoints de génération d'alertes
 
 ### Itération 2 : Interface CRUD Frontend
 - Formulaires de création/édition
@@ -135,6 +143,29 @@
 - Tests automatisés
 - Optimisation des performances
 - Documentation finale
+
+## 🎉 Statut Actuel (22/09/2025)
+
+### ✅ Architecture Complète et Fonctionnelle
+- **Backend Quarkus** : http://localhost:8080 (API REST + OpenAPI)
+- **Frontend Vue.js** : http://localhost:8081 (Interface utilisateur)
+- **PostgreSQL** : Base de données avec données de test
+- **Kafka** : Message broker pour événements
+- **CORS** : Configuration fonctionnelle backend-frontend
+
+### 🔧 Fonctionnalités Opérationnelles
+- Dashboard avec compteurs d'alertes
+- Affichage des alertes en temps réel
+- Filtres par type et priorité
+- Stockage persistant en base de données
+- Génération d'alertes via API
+- Architecture event-driven
+
+### 🚀 Comment Tester
+1. Démarrer l'architecture : `docker-compose -f infra/docker-compose.yml up -d`
+2. Ouvrir le frontend : http://localhost:8081
+3. Voir les alertes s'afficher (plus d'erreur réseau)
+4. Tester les APIs : http://localhost:8080/q/swagger-ui
 
 ## 📝 Notes Techniques
 

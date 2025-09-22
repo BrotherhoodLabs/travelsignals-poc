@@ -32,7 +32,8 @@ public class AlertAggregationService {
     
     @Incoming("price-updates-in")
     @Transactional
-    public void processPriceUpdate(PriceUpdate priceUpdate) {
+    public void processPriceUpdate(io.vertx.core.json.JsonObject jsonObject) {
+        PriceUpdate priceUpdate = jsonObject.mapTo(PriceUpdate.class);
         LOG.info("Processing price update for " + priceUpdate.destination);
         
         // Sauvegarder l'événement en base
@@ -67,7 +68,8 @@ public class AlertAggregationService {
     }
     
     @Incoming("weather-alerts-in")
-    public void processWeatherAlert(WeatherAlert weatherAlert) {
+    public void processWeatherAlert(io.vertx.core.json.JsonObject jsonObject) {
+        WeatherAlert weatherAlert = jsonObject.mapTo(WeatherAlert.class);
         LOG.info("Processing weather alert for " + weatherAlert.destination);
         
         // Règle P1: Météo rouge
@@ -93,7 +95,8 @@ public class AlertAggregationService {
     }
     
     @Incoming("flight-status-in")
-    public void processFlightStatus(FlightStatus flightStatus) {
+    public void processFlightStatus(io.vertx.core.json.JsonObject jsonObject) {
+        FlightStatus flightStatus = jsonObject.mapTo(FlightStatus.class);
         LOG.info("Processing flight status for " + flightStatus.flightNo);
         
         // Règle P3: Changements de statut de vol
@@ -121,7 +124,8 @@ public class AlertAggregationService {
     }
     
     @Incoming("visa-reminders-in")
-    public void processVisaReminder(VisaReminder visaReminder) {
+    public void processVisaReminder(io.vertx.core.json.JsonObject jsonObject) {
+        VisaReminder visaReminder = jsonObject.mapTo(VisaReminder.class);
         LOG.info("Processing visa reminder for " + visaReminder.country);
         
         // Règle P3: Rappels visa
@@ -157,7 +161,6 @@ public class AlertAggregationService {
         eventCounters.merge(eventType, 1, (old, newVal) -> (Integer) old + 1);
     }
     
-    @Transactional
     private void savePriceEvent(PriceUpdate priceUpdate) {
         try {
             // Trouver ou créer la destination
@@ -196,7 +199,6 @@ public class AlertAggregationService {
         }
     }
     
-    @Transactional
     private void saveAlertAggregate(AlertAggregate alert) {
         try {
             AlertAggregateEntity entity = new AlertAggregateEntity();

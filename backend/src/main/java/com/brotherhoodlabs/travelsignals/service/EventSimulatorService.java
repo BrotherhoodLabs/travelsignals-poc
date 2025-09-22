@@ -24,19 +24,19 @@ public class EventSimulatorService {
     
     @Inject
     @Channel("price-updates")
-    Emitter<PriceUpdate> priceEmitter;
+    public Emitter<PriceUpdate> priceEmitter;
     
     @Inject
     @Channel("weather-alerts")
-    Emitter<WeatherAlert> weatherEmitter;
+    public Emitter<WeatherAlert> weatherEmitter;
     
     @Inject
     @Channel("flight-status")
-    Emitter<FlightStatus> flightEmitter;
+    public Emitter<FlightStatus> flightEmitter;
     
     @Inject
     @Channel("visa-reminders")
-    Emitter<VisaReminder> visaEmitter;
+    public Emitter<VisaReminder> visaEmitter;
     
     private ScheduledExecutorService scheduler;
     private final Random random = new Random();
